@@ -17,9 +17,11 @@ In search.py, you will implement generic search algorithms which are called by
 Pacman agents (in search_agents.py).
 """
 
-from builtins import object
-import util
 import os
+from builtins import object
+
+import util
+
 
 def tiny_maze_search(problem):
     """
@@ -34,100 +36,179 @@ def tiny_maze_search(problem):
 
 
 def depth_first_search(problem):
-    
-    # What does this function need to return?
-    #     list of actions (actions shown below) that reaches the goal
-    # 
-    # What data is available?
-    #     start_state = problem.get_start_state() # returns a string
-    # 
-    #     problem.is_goal_state(start_state) # returns boolean
-    # 
-    #     transitions = problem.get_successors(start_state)
-    #     transitions[0].state
-    #     transitions[0].action
-    #     transitions[0].cost
-    # 
-    #     print(transitions) # would look like the list-of-lists on the next line
-    #     [
-    #         [ "B", "0:A->B", 1.0, ],
-    #         [ "C", "1:A->C", 2.0, ],
-    #         [ "D", "2:A->D", 4.0, ],
-    #     ]
-    # 
-    # Example:
-    #     start_state = problem.get_start_state()
-    #     transitions = problem.get_successors(start_state)
-    #     example_path = [  transitions[0].action  ]
-    #     path_cost = problem.get_cost_of_actions(example_path)
-    #     return example_path
-    
-    util.raise_not_defined()
+    to_visit = util.Stack()
+    discovered = set()
+    parents = {}
+
+    start = problem.get_start_state()
+    discovered.add(start)
+    to_visit.push(start)
+
+    while not to_visit.is_empty():
+        visiting = to_visit.pop()
+        if problem.is_goal_state(visiting):
+            path = []
+            node = visiting
+            while node != start:
+                parent, action = parents[node]
+                path.append(action)
+                node = parent
+            path.reverse()
+            return path
+
+        for neighbour, action, cost in problem.get_successors(visiting):
+            if neighbour not in discovered:
+                discovered.add(neighbour)
+                to_visit.push(neighbour)
+                parents[neighbour] = (visiting, action)
+    return []
 
 
 def breadth_first_search(problem):
     """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
-    util.raise_not_defined()
+    to_visit = util.Queue()
+    discovered = set()
+    parents = {}
+
+    start = problem.get_start_state()
+    discovered.add(start)
+    to_visit.push(start)
+
+    while not to_visit.is_empty():
+        visiting = to_visit.pop()
+
+        if problem.is_goal_state(visiting):
+            path = []
+            node = visiting
+            while node != start:
+                parent, action = parents[node]
+                path.append(action)
+                node = parent
+            path.reverse()
+            return path
+
+        for neighbour, action, cost in problem.get_successors(visiting):
+            if neighbour not in discovered:
+                discovered.add(neighbour)
+                to_visit.push(neighbour)
+                parents[neighbour] = (visiting, action)
+    return []
 
 
 def uniform_cost_search(problem, heuristic=None):
     """Search the node of least total cost first."""
     "*** YOUR CODE HERE ***"
-    util.raise_not_defined()
+    to_visit = util.PriorityQueue()
+    visited = set()
+    cost_to = {}
+    parents = {}
+
+    start = problem.get_start_state()
+    cost_to[start] = 0
+    to_visit.push(start, 0)
+
+    while not to_visit.is_empty():
+        visiting = to_visit.pop()
+
+        if visiting in visited:
+            continue
+        visited.add(visiting)
+
+        if problem.is_goal_state(visiting):
+            path = []
+            node = visiting
+            while node != start:
+                parent, action = parents[node]
+                path.append(action)
+                node = parent
+            path.reverse()
+            return path
+
+        for neighbour, action, cost in problem.get_successors(visiting):
+            new_cost = cost_to[visiting] + cost
+            if neighbour not in cost_to or new_cost < cost_to[neighbour]:
+                parents[neighbour] = (visiting, action)
+                cost_to[neighbour] = new_cost
+                to_visit.push(neighbour, new_cost)
 
 
-# 
+#
 # heuristics
-# 
+#
 def a_really_really_bad_heuristic(position, problem):
-    from random import random, sample, choices
-    return int(random()*1000)
+    from random import choices, random, sample
+
+    return int(random() * 1000)
+
 
 def null_heuristic(state, problem=None):
     return 0
 
+
 def your_heuristic(state, problem=None):
     from search_agents import FoodSearchProblem
-    
-    # 
+
+    #
     # heuristic for the find-the-goal problem
-    # 
+    #
     if isinstance(problem, SearchProblem):
         # data
         pacman_x, pacman_y = state
-        goal_x, goal_y     = problem.goal
-        
+        goal_x, goal_y = problem.goal
+
         # YOUR CODE HERE (set value of optimisitic_number_of_steps_to_goal)
-        
+
         optimisitic_number_of_steps_to_goal = 0
         return optimisitic_number_of_steps_to_goal
-    # 
+    #
     # traveling-salesman problem (collect multiple food pellets)
-    # 
+    #
     elif isinstance(problem, FoodSearchProblem):
         # the state includes a grid of where the food is (problem isn't ter)
         position, food_grid = state
         pacman_x, pacman_y = position
-        
+
         # YOUR CODE HERE (set value of optimisitic_number_of_steps_to_goal)
-        
+
         optimisitic_number_of_steps_to_goal = 0
         return optimisitic_number_of_steps_to_goal
 
+
 def a_star_search(problem, heuristic=your_heuristic):
-    """Search the node that has the lowest combined cost and heuristic first."""
-    "*** YOUR CODE HERE ***"
-    
-    # 
-    # NOTE: the `heuristic` argument above is a function. 
-    # you can call it just like any other function
-    # for example:
-    #     state = YOUR CODE HERE       # (see comments in depth_first_search above)
-    #     priority = depth + heuristic(state, problem)
-    #
-    
-    util.raise_not_defined()
+    to_visit = util.PriorityQueue()
+    visited = set()
+    g_cost = {}
+    parents = {}
+
+    start = problem.get_start_state()
+    g_cost[start] = 0
+    to_visit.push(start, 0 + heuristic(start, problem))
+
+    while not to_visit.is_empty():
+        visiting = to_visit.pop()
+
+        if visiting in visited:
+            continue
+        visited.add(visiting)
+
+        if problem.is_goal_state(visiting):
+            path = []
+            node = visiting
+            while node != start:
+                parent, action = parents[node]
+                path.append(action)
+                node = parent
+            path.reverse()
+            return path
+
+        for neighbour, action, cost in problem.get_successors(visiting):
+            new_g = g_cost[visiting] + cost
+            if neighbour not in g_cost or new_g < g_cost[neighbour]:
+                parents[neighbour] = (visiting, action)
+                g_cost[neighbour] = new_g
+                to_visit.push(neighbour, new_g + heuristic(neighbour, problem))
+    return []
 
 
 # (you can ignore this, although it might be helpful to know about)
@@ -175,15 +256,24 @@ class SearchProblem(object):
         """
         util.raise_not_defined()
 
-if os.path.exists("./hidden/search.py"): from hidden.search import *
+
+if os.path.exists("./hidden/search.py"):
+    from hidden.search import *
 # fallback on a_star_search
-for function in [breadth_first_search, depth_first_search, uniform_cost_search, ]:
-    try: function(None)
-    except util.NotDefined as error: exec(f"{function.__name__} = a_star_search", globals(), globals())
-    except: pass
+for function in [
+    breadth_first_search,
+    depth_first_search,
+    uniform_cost_search,
+]:
+    try:
+        function(None)
+    except util.NotDefined as error:
+        exec(f"{function.__name__} = a_star_search", globals(), globals())
+    except:
+        pass
 
 # Abbreviations
-bfs   = breadth_first_search
-dfs   = depth_first_search
+bfs = breadth_first_search
+dfs = depth_first_search
 astar = a_star_search
-ucs   = uniform_cost_search
+ucs = uniform_cost_search
