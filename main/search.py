@@ -18,8 +18,11 @@ Pacman agents (in search_agents.py).
 """
 
 import os
+import random
+import threading
 from builtins import object
 
+# from concurrent.futures import Future, ThreadPoolExecutor
 import util
 
 
@@ -211,6 +214,71 @@ def a_star_search(problem, heuristic=your_heuristic):
     return []
 
 
+# Deprecated, threading does not work
+tk_lock = threading.Lock()
+
+
+def _monkey(problem, max_moves):
+    rand = random.Random()
+    path = []
+    node = problem.get_start_state()
+    while len(path) < max_moves:
+        with tk_lock:
+            if problem.is_goal_state(node):
+                return path
+            neighbours = problem.get_successors(node)
+        choice = rand.choice(neighbours)
+        path.append(choice.action)
+        node = choice.state
+    return None
+
+
+def monkey_search_sync(problem, monkey_count=10, max_moves=0):
+    start = problem.get_start_state()
+
+    monkeys = []
+    for _ in range(monkey_count):
+        monkeys.append({"node": start, "previous": None, "path": []})
+
+    iteration = 0
+    while max_moves == 0 or iteration < max_moves:
+        for monkey in monkeys:
+            if problem.is_goal_state(monkey["node"]):
+                print(f"path found of length {len(monkey['path'])}")
+                return monkey["path"]
+            neighbours = problem.get_successors(monkey["node"])
+            for i, neighbour in enumerate(neighbours):
+                if neighbour.state == monkey["previous"]:
+                    neighbours.pop(i)
+                    break
+            choice = random.choice(neighbours)
+            monkey["path"].append(choice.action)
+            monkey["previous"] = monkey["node"]
+            monkey["node"] = choice.state
+        iteration += 1
+    return []
+
+    # executor = ThreadPoolExecutor(max_workers=monkeys)
+    # futures: list[Future] = []
+    # for _ in range(monkeys):
+    #     future = executor.submit(_monkey, problem, max_length)
+    #     futures.append(future)
+    # while True:
+    #     if len(futures) == 0:
+    #         return []
+    #     i = 0
+    #     while i < len(futures):
+    #         future = futures[i]
+    #         if future.done():
+    #             path = future.result()
+    #             if path:
+    #                 return path
+    #             else:
+    #                 futures.pop(i)
+    #         else:
+    #             i += 1
+
+
 # (you can ignore this, although it might be helpful to know about)
 # This is effectively an abstract class
 # it should give you an idea of what methods will be available on problem-objects
@@ -277,3 +345,4 @@ bfs = breadth_first_search
 dfs = depth_first_search
 astar = a_star_search
 ucs = uniform_cost_search
+mss = monkey_search_sync
