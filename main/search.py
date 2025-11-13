@@ -238,8 +238,48 @@ def process_tasks():
 		task_queue.task_done()
 
 
-# Deprecated, threading does not work
-def _monkey(problem, start, max_moves):
+class Monkey:
+	def __init__(self, problem, seed=None) -> None:
+		self.problem = problem
+		self.current = problem.get_start_state()
+		self.previous = None
+		self.path = []
+		self.rand = random.Random(seed)
+
+	def _pick(self, neighbours):
+		if len(neighbours) == 1:
+			return neighbours[0]
+		else:
+			return self.rand.choice(
+				[n for n in neighbours if n.state != self.previous]
+			)
+
+	def step(self):
+		if self.problem.is_goal_state(self.current):
+			return self.path
+		neighbours = self.problem.get_successors(self.current)
+		next = self._pick(neighbours)
+		self.path.append(next.action)
+		self.previous = self.current
+		self.current = next.state
+
+
+def monkey_search_sync(problem, monkey_count=1, max_moves=0):
+	monkeys = [Monkey(problem) for _ in range(monkey_count)]
+
+	iteration = 0
+	while max_moves == 0 or iteration <= max_moves:
+		for monkey in monkeys:
+			path = monkey.step()
+			if path:
+				print(f'Path found! Length: {len(path)}')
+				return path
+		iteration += 1
+	return []
+
+
+# Still not working, implement Monkey() anyway maybe
+def _monkey_thread(problem, start, max_moves):
 	rand = random.Random()
 	path = []
 	current = start
@@ -248,25 +288,24 @@ def _monkey(problem, start, max_moves):
 		if safe_call(problem.is_goal_state, current):
 			print(f'path found of length {len(path)}')
 			return path
-
 		neighbours = safe_call(problem.get_successors, current)
 		if len(neighbours) == 1:
 			next = neighbours[0]
 		else:
 			next = rand.choice([n for n in neighbours if n.state != previous])
-
 		path.append(next.action)
 		previous = current
 		current = next.state
 	return None
 
 
-def monkey_search_sync(problem, monkey_count=10, max_moves=0):
+# Still not working
+def monkey_search_threaded(problem, monkey_count=10, max_moves=0):
 	start = problem.get_start_state()
 
 	with ThreadPoolExecutor(max_workers=monkey_count) as executor:
 		monkeys = [
-			executor.submit(_monkey, problem, start, max_moves)
+			executor.submit(_monkey_thread, problem, start, max_moves)
 			for _ in range(monkey_count)
 		]
 
@@ -355,3 +394,4 @@ dfs = depth_first_search
 astar = a_star_search
 ucs = uniform_cost_search
 mss = monkey_search_sync
+mst = monkey_search_threaded
