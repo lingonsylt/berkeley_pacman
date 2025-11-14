@@ -17,6 +17,7 @@ In search.py, you will implement generic search algorithms which are called by
 Pacman agents (in search_agents.py).
 """
 
+from enum import Flag
 import os
 import random
 from builtins import object
@@ -239,12 +240,22 @@ def process_tasks():
 
 
 class Monkey:
-	def __init__(self, problem, seed=None) -> None:
+	def __init__(self, problem, node_cache: dict, seed=None) -> None:
 		self.problem = problem
 		self.current = problem.get_start_state()
 		self.previous = None
 		self.path = []
+		self.node_cache = node_cache
+		
+		self.threaded = threaded
 		self.rand = random.Random(seed)
+
+
+	def get_node_info(self, node):
+		return {
+			'is_goal': self.problem.is_goal_state(node),
+			'neighbours': self.problem.get_successors(node)
+		}
 
 	def _pick(self, neighbours):
 		if len(neighbours) == 1:
@@ -255,7 +266,8 @@ class Monkey:
 			)
 
 	def step(self):
-		if self.problem.is_goal_state(self.current):
+		node = self.get_node_info(self.current)
+		if node['is_goal']:
 			return self.path
 		neighbours = self.problem.get_successors(self.current)
 		next = self._pick(neighbours)
@@ -263,9 +275,24 @@ class Monkey:
 		self.previous = self.current
 		self.current = next.state
 
+class NodeCache:
+	def __init__(self, problem) -> None:
+		self.problem = problem
+		self.cache = {}
+	
+	def get(self, node):
+		if node not in self.cache:
+			self.cache[node] = self.problem.get_successors(node)
+		return {
+			'is_goal': self.problem.is_goal_state(node),
+			'neigbours': self.cache[node]
+		}
+		
 
 def monkey_search_sync(problem, monkey_count=1, max_moves=0):
 	monkeys = [Monkey(problem) for _ in range(monkey_count)]
+
+	node_cache = NodeCache()
 
 	iteration = 0
 	while max_moves == 0 or iteration <= max_moves:
