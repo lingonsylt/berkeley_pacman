@@ -25,7 +25,7 @@ import random
 from builtins import object
 from concurrent.futures.thread import ThreadPoolExecutor
 
-from util import PriorityQueue, Queue, Stack
+import util
 
 
 def tiny_maze_search(problem):
@@ -41,7 +41,7 @@ def tiny_maze_search(problem):
 
 
 def depth_first_search(problem):
-	to_visit = Stack()
+	to_visit = util.Stack()
 	discovered = set()
 	parents = {}
 
@@ -72,7 +72,7 @@ def depth_first_search(problem):
 def breadth_first_search(problem):
 	"""Search the shallowest nodes in the search tree first."""
 	'*** YOUR CODE HERE ***'
-	to_visit = Queue()
+	to_visit = util.Queue()
 	discovered = set()
 	parents = {}
 
@@ -104,7 +104,7 @@ def breadth_first_search(problem):
 def uniform_cost_search(problem, heuristic=None):
 	"""Search the node of least total cost first."""
 	'*** YOUR CODE HERE ***'
-	to_visit = PriorityQueue()
+	to_visit = util.PriorityQueue()
 	visited = set()
 	cost_to = {}
 	parents = {}
@@ -181,7 +181,7 @@ def your_heuristic(state, problem=None):
 
 
 def a_star_search(problem, heuristic=your_heuristic):
-	to_visit = PriorityQueue()
+	to_visit = util.PriorityQueue()
 	visited = set()
 	g_cost = {}
 	parents = {}
